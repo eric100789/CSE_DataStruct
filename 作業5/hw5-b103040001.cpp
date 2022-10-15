@@ -272,6 +272,8 @@ int main()
 
         if(input_p == 0 && input_q == 0) return 0;
 
+        cout << "Case" << cases << ":" << endl;
+
         cout << "ADD" << endl;
         C = A+B;
         C.debug();
