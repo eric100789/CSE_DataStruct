@@ -1,6 +1,13 @@
 #include <iostream>
 using namespace std;
 
+/*
+Author: B103040001 孫世諭
+Date: Sept. 19,2022
+Purpose: 設計一個程式，可以處理兩個多項式之加法與乘法
+*/
+
+// class linklist
 class LinkList
 {
     private:
@@ -9,21 +16,21 @@ class LinkList
     LinkList * next;
 
     public:
-    LinkList()
+    LinkList() // constructer
     {
         val = 0;
         exp = 0;
         next = NULL;
     }
-    ~LinkList(){}
-    LinkList(int val , int exp)
+    ~LinkList(){} // destructor
+    LinkList(int val , int exp) // constructer with value
     {
         this->exp = exp;
         this->val = val;
         this->next = NULL;
     }
 
-    void debug()
+    void debug() // print the linklist and kill 0-value class
     {
         this->remove_zero();
         LinkList * current = this;
@@ -35,7 +42,7 @@ class LinkList
         cout << current->val << " " << current->exp << endl;
     }
 
-    void remove_zero()
+    void remove_zero() // kill 0-value class
     {
         LinkList * current = this;
         LinkList * temp;
@@ -73,7 +80,7 @@ class LinkList
         
     }
 
-    void reset()
+    void reset() // reset the linklist 
     {
         LinkList * current_this = this->next;
         LinkList * temp = NULL;
@@ -92,10 +99,11 @@ class LinkList
         this->next = NULL;
     }
 
+    // add val and exp to target linklist
     void add(int val , int exp)
     {
-        if(val == 0) return;
-        LinkList * current = this;
+        if(val == 0) return; // wrong input
+        LinkList * current = this; 
 
         if(current->exp < exp)
         {
@@ -143,31 +151,37 @@ class LinkList
         }
     }
 
+    // operator + in order to add two linklist
     LinkList operator+ (LinkList & target)
     {
+        // add to current for two linklist
         LinkList new_list;
         LinkList * current_this = this;
         LinkList * current_tar = &target;
 
+        // keep going until next ptr is NULL
         while(current_this->next != NULL)
         {
             new_list.add(current_this->val,current_this->exp);
             current_this = current_this->next;
         }
-        new_list.add(current_this->val,current_this->exp);
+        new_list.add(current_this->val,current_this->exp); // add now current
        
+       // do it again
         while(current_tar->next != NULL)
         {
             new_list.add(current_tar->val,current_tar->exp);
             current_tar = current_tar->next;
         }
-        new_list.add(current_tar->val,current_tar->exp);
+        new_list.add(current_tar->val,current_tar->exp); // add now tar_current
  		
+        // if there is any 0-value, we GG
         new_list.remove_zero();
         
         return new_list;
     }
 
+    // operator * in order to multipy
     LinkList operator* (LinkList target)
     {
         LinkList new_list;
@@ -192,13 +206,14 @@ class LinkList
             current_tar = current_tar->next;
         }
         new_list.add(current_this->val*current_tar->val , current_this->exp+current_tar->exp);
+        // if there is any 0-value, we GG
         new_list.remove_zero();
         return new_list;
     }
 
     LinkList operator= (LinkList target)
     {   
-        LinkList new_list;
+        LinkList new_list; // new list to make target assign
         LinkList * current_this = this->next;
         LinkList * current_tar = &target;
         LinkList * temp = NULL;
@@ -236,6 +251,7 @@ int main()
     LinkList A,B,C;
     int cases = 0;
 
+    // some input
     while(true)
     {
         A.reset();
