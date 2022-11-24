@@ -3,6 +3,18 @@ import tkinter.messagebox
 from tkinter import ttk
 from tkinter import filedialog as fd
 from tkinter.constants import *
+import os
+
+def openfile():
+    file_name = fd.askopenfilename()
+
+    cpptest="huffman.exe"
+    if os.path.exists(cpptest):
+        f=os.popen("%s %s"%(cpptest,file_name))
+        data=f.readlines()
+        f.close()
+    print(data)
+
 
 if __name__ == '__main__':
     print("main.py is ready")
@@ -12,7 +24,7 @@ if __name__ == '__main__':
     window.title("Homework 7")
 
     # create two picture
-    img = tkinter.Label(window,relief = 'solid', width = 80, height = 30)
+    label = tkinter.Label(window,relief = 'solid', width = 80, height = 30)
 
     # size control
     window.geometry('800x500')
@@ -21,7 +33,7 @@ if __name__ == '__main__':
     lbl_title = tkinter.Label(window, text = "Homework 8", font=("Arial",18))
 
     # open file
-    btn_open = tkinter.Button(window, text = 'Open', bg = 'light cyan', font = ('Arial', 18), width = 7, height = 1)
+    btn_open = tkinter.Button(window, text = 'Open', bg = 'light cyan', font = ('Arial', 18), width = 7, height = 1, command=openfile)
 
     # save file
     btn_save = tkinter.Button(window, text = 'Save', bg = 'light cyan', font = ('Arial', 18), width = 7, height = 1)
@@ -30,7 +42,7 @@ if __name__ == '__main__':
     btn_reset = tkinter.Button(window, text = 'Reset', bg = 'light cyan', font = ('Arial', 18), width = 7, height = 1)
 
     #place
-    img.place(x = 175, y = 20)
+    label.place(x = 175, y = 20)
     lbl_title.place(x=10, y=0)
     btn_open.place(x = 20, y = 50)
     btn_save.place(x = 20, y = 125)
