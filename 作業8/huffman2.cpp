@@ -173,26 +173,7 @@ void huff_encode(char * file_path)
     outputFile << huffmaned.size() << '\n';
     for(int i=0 ; i<huffmaned.size() ; i++)
     {
-        outputFile << huffmaned[i].prenum << ' ' << huffmaned[i].lastnum.size() << ' ';
-
-        char tmp = 0, cnt = 0;
-        for(int j=0 ; j<huffmaned[i].lastnum.size() ; j++)
-        {
-            tmp <<= 1;
-            tmp |= ( huffmaned[i].lastnum[j] - '0');
-            cnt++;
-            if(cnt==8)
-            {
-                outputFile << tmp;
-                tmp = cnt = 0;
-            }
-        }
-        if (cnt)
-        {
-            tmp <<= (8 - cnt);
-            outputFile << tmp;
-        }
-        outputFile << '\n';
+        outputFile << huffmaned[i].prenum << ' ' << huffmaned[i].lastnum.size() << ' ' << huffmaned[i].lastnum << endl;
     }
 
     for(int i=0 ; i<text.size() ; i++)
@@ -208,29 +189,10 @@ void huff_encode(char * file_path)
         {
             if(huffmaned[j].prenum == text[i])
             {
-                index = j;
+                outputFile << huffmaned[j].lastnum;
                 break;
             }
         }
-
-        char tmp = 0, cnt = 0;
-        for(int j=0 ; j<huffmaned[index].lastnum.size() ; j++)
-        {
-            tmp <<= 1;
-            tmp |= ( huffmaned[index].lastnum[j] - '0');
-            cnt++;
-            if(cnt==8)
-            {
-                outputFile << tmp;
-                tmp = cnt = 0;
-            }
-        }
-        if (cnt)
-        {
-            tmp <<= (8 - cnt);
-            outputFile << tmp;
-        }
-        outputFile << '\n';
         
     }
 
@@ -253,19 +215,7 @@ void huff_decode(char * file_path)
         Encoder temp;
         string last = "";
         int len;
-        inputFile >> temp.prenum >> len ;
-        if(len <8)
-        {
-            char a;
-            inputFile >> a ;
-        }
-        else
-        {
-            char a1, a2;
-            inputFile >> a1 >> a2 ;
-            last = a1+a2;
-        }
-        temp.lastnum = last;
+        inputFile >> temp.prenum >> len >> temp.lastnum ;
         cout << temp.prenum << " " << len << " " << temp.lastnum  << endl;
         huff_vec.push_back(temp);
     }
