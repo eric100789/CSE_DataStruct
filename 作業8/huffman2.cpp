@@ -5,15 +5,17 @@
 #include <vector>
 #include <algorithm>
 using namespace std;
-#define testF do{char test;\
-    while(inputFile>>test)\
-    {\
-        cout << test;\
-    }}while(0)
 
 struct Encoder
 {
     int prenum;
+    string lastnum;
+};
+
+struct Decoder
+{
+    int prenum;
+    int len;
     string lastnum;
 };
 
@@ -84,8 +86,25 @@ class Node
             
         }
     }
-
 };
+
+string convert_string(string tar, int len)
+{
+    string ans = "";
+    for (int i=0 ; i<=(len-1)/8 ; i++)
+    {        
+        char a=tar[i];
+        int nowlen;
+        if(i==(len-1)/8) nowlen = (len-1)%8+1;
+        else nowlen=8;
+        for(int j=0 ; j<nowlen ; j++)
+        {
+            if( ((a>>(7-j))&1) == 1) ans+= '1';
+            else ans += '0';
+        }
+    }
+    return ans;
+}
 
 bool compare(const void* a, const void* b)
 {
@@ -109,28 +128,15 @@ bool compare(const void* a, const void* b)
     return false;
 }
 
-int binary_search(const vector<Encoder> &data, int key) {
-    int low = 0;
-    int high = data.size()-1;
-    while (low <= high) {
-        int mid = int((low + high) / 2);
-        if (key == data[mid].prenum)
-            return mid;
-        else if (key > data[mid].prenum)
-            low = mid + 1;
-        else
-            high = mid - 1;
-    }
-    return -1;
-}
-
 void huff_encode(char * file_path)
 {
     ifstream inputFile(file_path, ios::in | ios::binary);
+
     if(!inputFile) {
         cout << "error" <<endl;
         return;
     }
+
     char c;
     int i_arr[256] = {0};
     vector<char> text;
@@ -173,27 +179,57 @@ void huff_encode(char * file_path)
     outputFile << huffmaned.size() << '\n';
     for(int i=0 ; i<huffmaned.size() ; i++)
     {
-        outputFile << huffmaned[i].prenum << ' ' << huffmaned[i].lastnum.size() << ' ' << huffmaned[i].lastnum << endl;
+        outputFile << huffmaned[i].prenum << ' ' << huffmaned[i].lastnum.size() << ' ';
+
+        char tmp = 0, cnt = 0;
+        for(int j=0 ; j<huffmaned[i].lastnum.size() ; j++)
+        {
+            tmp <<= 1;
+            tmp |= ( huffmaned[i].lastnum[j] - '0');
+            cnt++;
+            if(cnt==8)
+            {
+                outputFile << tmp;
+                tmp = cnt = 0;
+            }
+        }
+        if (cnt)
+        {
+            tmp <<= (8 - cnt);
+            outputFile << tmp;
+        }
+        outputFile << '\n';
     }
 
     for(int i=0 ; i<text.size() ; i++)
     {
-        //int index = binary_search(huffmaned, text[i]);
-        /*if(index == -1)
-        {
-            cout << "ohno" << endl;
-            continue;
-        }*/
         int index;
         for(int j=0 ; j<huffmaned.size() ; j++)
         {
             if(huffmaned[j].prenum == text[i])
             {
-                outputFile << huffmaned[j].lastnum;
+                index = j;
                 break;
             }
         }
-        
+
+        char tmp = 0, cnt = 0;
+        for(int j=0 ; j<huffmaned[index].lastnum.size() ; j++)
+        {
+            tmp <<= 1;
+            tmp |= ( huffmaned[index].lastnum[j] - '0');
+            cnt++;
+            if(cnt==8)
+            {
+                outputFile << tmp;
+                tmp = cnt = 0;
+            }
+        }
+        if (tmp)
+        {
+            tmp <<= (8 - cnt);
+            outputFile << tmp;
+        }
     }
 
 
@@ -203,39 +239,51 @@ void huff_encode(char * file_path)
 
 void huff_decode(char * file_path)
 {
-    cout << "-----------------------------------" << endl;
+    cout << "---------"<<endl;
     ifstream inputFile(file_path, ios::in | ios::binary);
-
-    int huff_num;
-    inputFile >> huff_num;
-    vector<Encoder> huff_vec;    
-
-    for(int i=0 ; i<huff_num ; i++)
+    ofstream outputFile("unzipped.txt", ios::out | ios::binary);
+    int decode_num; inputFile >> decode_num;
+    vector<Decoder> huffmaned;
+    for(int i=0 ; i<decode_num ; i++)
     {
-        Encoder temp;
-        string last = "";
-        int len;
-        inputFile >> temp.prenum >> len >> temp.lastnum ;
-        cout << temp.prenum << " " << len << " " << temp.lastnum  << endl;
-        huff_vec.push_back(temp);
-    }
-
-    string get_huff;
-    ofstream outputFile("output_unzipped.txt", ios::out | ios::binary);
-    while (inputFile >> get_huff)
-    {
-        for(int j=0 ; j<huff_vec.size() ; j++)
+        Decoder temp; string get_str="";
+        char ch;
+        inputFile >> temp.prenum >> temp.len;
+        inputFile.get();
+        for(int j=0 ; j<=(temp.len-1)/8 ; j++)
         {
-            if(huff_vec[j].lastnum == get_huff)
+            char ch;
+            ch = inputFile.get();
+            get_str += ch;
+        }
+        temp.lastnum = convert_string(get_str,temp.len);
+        huffmaned.push_back(temp);
+        cout<< "here:" << temp.prenum << "/" << temp.len << "/" << temp.lastnum << endl;
+    }
+    inputFile.get();
+    char ch;
+    int cnt=0;
+    string ans = "";  
+    while(~(ch=inputFile.get()))
+    {
+        for(int i=0; i<8 ; i++)
+        {
+            if( ((ch>>(7-i))&1) == 1) ans+= '1';
+            else ans += '0';
+            for(int j=0; j<huffmaned.size() ; j++)
             {
-                outputFile << huff_vec[j].prenum;
-                break;
+                if(huffmaned[j].lastnum == ans)
+                {
+                    cout << huffmaned[j].lastnum << "/" << ans << "/" << huffmaned[j].prenum << "/" << (char)huffmaned[j].prenum << endl;
+                    outputFile << (char)huffmaned[j].prenum;
+                    ans = "";
+                    break;
+                }
             }
         }
     }
-
-    inputFile.close();
     outputFile.close();
+    inputFile.close();
 }
 
 int main(int argc, char *argv[])
@@ -246,8 +294,8 @@ int main(int argc, char *argv[])
     }
     else
     {
-        char a[] = "output.txt";
-        huff_encode(argv[0]);
+        char a[]= "output.txt";
+        huff_encode(argv[1]);
         huff_decode(a);
     }
     

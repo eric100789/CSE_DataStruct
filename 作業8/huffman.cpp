@@ -84,7 +84,6 @@ class Node
             
         }
     }
-
 };
 
 bool compare(const void* a, const void* b)
@@ -107,21 +106,6 @@ bool compare(const void* a, const void* b)
     }
 
     return false;
-}
-
-int binary_search(const vector<Encoder> &data, int key) {
-    int low = 0;
-    int high = data.size()-1;
-    while (low <= high) {
-        int mid = int((low + high) / 2);
-        if (key == data[mid].prenum)
-            return mid;
-        else if (key > data[mid].prenum)
-            low = mid + 1;
-        else
-            high = mid - 1;
-    }
-    return -1;
 }
 
 void huff_encode(char * file_path)
@@ -197,12 +181,6 @@ void huff_encode(char * file_path)
 
     for(int i=0 ; i<text.size() ; i++)
     {
-        //int index = binary_search(huffmaned, text[i]);
-        /*if(index == -1)
-        {
-            cout << "ohno" << endl;
-            continue;
-        }*/
         int index;
         for(int j=0 ; j<huffmaned.size() ; j++)
         {
@@ -241,7 +219,6 @@ void huff_encode(char * file_path)
 
 void huff_decode(char * file_path)
 {
-    cout << "-----------------------------------" << endl;
     ifstream inputFile(file_path, ios::in | ios::binary);
 
     int huff_num;
@@ -252,37 +229,53 @@ void huff_decode(char * file_path)
     {
         Encoder temp;
         string last = "";
+        char nouse;
         int len;
-        inputFile >> temp.prenum >> len ;
-        if(len <8)
+        inputFile >> temp.prenum >> len;
+        if(len <=8)
         {
             char a;
             inputFile >> a ;
+            last += a;
         }
         else
         {
             char a1, a2;
             inputFile >> a1 >> a2 ;
-            last = a1+a2;
+            last += a1;
+            last += a2;
         }
         temp.lastnum = last;
-        cout << temp.prenum << " " << len << " " << temp.lastnum  << endl;
         huff_vec.push_back(temp);
     }
 
     string get_huff;
-    ofstream outputFile("output_unzipped.txt", ios::out | ios::binary);
+    ofstream outputFile("output_unzipped", ios::out | ios::binary);
+    int bad=0;
+    int two = 0;
     while (inputFile >> get_huff)
     {
-        for(int j=0 ; j<huff_vec.size() ; j++)
+        cout << "GET: " << get_huff << "/" << get_huff.size() << endl;
+        //char nouse;
+        //inputFile >> nouse;
+        //cout << "nouse: " << nouse << " " << (int)nouse << endl;
+        if (get_huff.size() == 2) two++;
+        for(int i=0 ; i<huff_vec.size() ; i++)
         {
-            if(huff_vec[j].lastnum == get_huff)
+            if(huff_vec[i].lastnum == get_huff)
             {
-                outputFile << huff_vec[j].prenum;
-                break;
+                outputFile << (char)huff_vec[i].prenum;
+                goto OK;
             }
         }
+        bad++;
+
+        OK:
+            cout << "";
     }
+    cout << endl;
+    cout << two << endl;
+    cout << bad << endl;
 
     inputFile.close();
     outputFile.close();
