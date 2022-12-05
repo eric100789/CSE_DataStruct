@@ -46,6 +46,7 @@
         "xutility": "cpp",
         "vector": "cpp",
         "chrono": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "stack": "cpp"
     }
 }
