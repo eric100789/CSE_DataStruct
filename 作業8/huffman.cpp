@@ -5,15 +5,17 @@
 #include <vector>
 #include <algorithm>
 using namespace std;
-#define testF do{char test;\
-    while(inputFile>>test)\
-    {\
-        cout << test;\
-    }}while(0)
 
 struct Encoder
 {
     int prenum;
+    string lastnum;
+};
+
+struct Decoder
+{
+    int prenum;
+    int len;
     string lastnum;
 };
 
@@ -22,9 +24,9 @@ class Node
     private:
     int num;
     int val;
-    bool isadd;
     Node * right;
     Node * left;
+    string str;
 
     public:
     friend class Tree;
@@ -33,23 +35,25 @@ class Node
         this->num = 0;
         this->right = nullptr;
         this->left = nullptr;
-        isadd = false;
+        str = "";
     }
-    Node(int val, int num, bool isAdded)
+    Node(int val, int num)
     {
         this->val = val;
         this->num = num;
         this->right = nullptr;
         this->left = nullptr;
-        this->isadd = isAdded;
+        this->str = "";
+        str += (char)val;
     }
-    Node(int val, int num, Node * right, Node * left, bool isAdded)
+    Node(int val, int num, Node * right, Node * left)
     {
         this->val = val;
         this->num = num;
         this->right = right;
         this->left = left;
-        this->isadd = isAdded;
+        this->str = "";
+        this->str += (char)val;
     }
     Node(Node * right, Node * left)
     {
@@ -57,7 +61,8 @@ class Node
         this->num = right->num + left->num;
         this->right = right;
         this->left = left;
-        this->isadd = true;
+        this->str += (char)right->val;
+        this->str += (char)left->val;
     }
     int getNum()
     {
@@ -66,6 +71,10 @@ class Node
     int getVal()
     {
         return val;
+    }
+    string getStr()
+    {
+        return str;
     }
     void makeEncoder(vector<Encoder> & target, string now="")
     {
@@ -78,13 +87,42 @@ class Node
         }
         else
         {
-            
+            if(this->left)
             this->left->makeEncoder(target, now+"0");
+            if(this->right)
             this->right->makeEncoder(target, now+"1");
             
         }
     }
+    void debug()
+    {
+        if(this->left == nullptr && this->right == nullptr)
+        {
+            //cout << "My:" << this->val << "/" << (char)this->val << "/num" << this->num << endl;
+            return;
+        }
+        if(this->left) this->left->debug();
+        if(this->right) this->right->debug();
+    }
 };
+
+string convert_string(string tar, int len)
+{
+    string ans = "";
+    for (int i=0 ; i<=(len-1)/8 ; i++)
+    {        
+        char a=tar[i];
+        int nowlen;
+        if(i==(len-1)/8) nowlen = (len-1)%8+1;
+        else nowlen=8;
+        for(int j=0 ; j<nowlen ; j++)
+        {
+            if( ((a>>(7-j))&1) == 1) ans+= '1';
+            else ans += '0';
+        }
+    }
+    return ans;
+}
 
 bool compare(const void* a, const void* b)
 {
@@ -111,10 +149,12 @@ bool compare(const void* a, const void* b)
 void huff_encode(char * file_path)
 {
     ifstream inputFile(file_path, ios::in | ios::binary);
+
     if(!inputFile) {
         cout << "error" <<endl;
         return;
     }
+
     char c;
     int i_arr[256] = {0};
     vector<char> text;
@@ -129,7 +169,8 @@ void huff_encode(char * file_path)
     {
         if(i_arr[i] > 0)
         {
-            vec_node.push_back(new Node(i-128,i_arr[i],false));
+            //cout << "Hey:" << (char)(i-128) << " has " << i_arr[i] << endl;
+            vec_node.push_back(new Node(i-128,i_arr[i]));
         }
     }
     sort(vec_node.begin(),vec_node.end(), compare );
@@ -142,6 +183,7 @@ void huff_encode(char * file_path)
         sort(vec_node.begin(),vec_node.end(), compare );
         //delete temp1,temp2;
     }
+    vec_node[0]->debug();
     vector<Encoder> huffmaned;
     vec_node[0]->makeEncoder(huffmaned);
 
@@ -154,7 +196,7 @@ void huff_encode(char * file_path)
 
     ofstream outputFile("output.txt", ios::out | ios::binary);
 
-    outputFile << huffmaned.size() << '\n';
+    outputFile << huffmaned.size() << ' ' << text.size() << '\n';
     for(int i=0 ; i<huffmaned.size() ; i++)
     {
         outputFile << huffmaned[i].prenum << ' ' << huffmaned[i].lastnum.size() << ' ';
@@ -179,6 +221,7 @@ void huff_encode(char * file_path)
         outputFile << '\n';
     }
 
+    char tmp = 0, cnt = 0;
     for(int i=0 ; i<text.size() ; i++)
     {
         int index;
@@ -187,11 +230,11 @@ void huff_encode(char * file_path)
             if(huffmaned[j].prenum == text[i])
             {
                 index = j;
+                //cout << huffmaned[j].lastnum;
                 break;
             }
         }
 
-        char tmp = 0, cnt = 0;
         for(int j=0 ; j<huffmaned[index].lastnum.size() ; j++)
         {
             tmp <<= 1;
@@ -203,15 +246,12 @@ void huff_encode(char * file_path)
                 tmp = cnt = 0;
             }
         }
-        if (cnt)
-        {
-            tmp <<= (8 - cnt);
-            outputFile << tmp;
-        }
-        outputFile << '\n';
-        
     }
-
+    if (tmp)
+    {
+        tmp <<= (8 - cnt);
+        outputFile << tmp;
+    }
 
     outputFile.close();
     inputFile.close();
@@ -219,66 +259,55 @@ void huff_encode(char * file_path)
 
 void huff_decode(char * file_path)
 {
+    //cout << "---------"<<endl;
     ifstream inputFile(file_path, ios::in | ios::binary);
-
-    int huff_num;
-    inputFile >> huff_num;
-    vector<Encoder> huff_vec;    
-
-    for(int i=0 ; i<huff_num ; i++)
+    ofstream outputFile("unzipped.txt", ios::out | ios::binary);
+    int decode_num,text_num; inputFile >> decode_num >> text_num;
+    vector<Decoder> huffmaned;
+    for(int i=0 ; i<decode_num ; i++)
     {
-        Encoder temp;
-        string last = "";
-        char nouse;
-        int len;
-        inputFile >> temp.prenum >> len;
-        if(len <=8)
+        Decoder temp; string get_str="";
+        char ch;
+        inputFile >> temp.prenum >> temp.len;
+        inputFile.get();
+        for(int j=0 ; j<=(temp.len-1)/8 ; j++)
         {
-            char a;
-            inputFile >> a ;
-            last += a;
+            char ch;
+            ch = inputFile.get();
+            get_str += ch;
         }
-        else
-        {
-            char a1, a2;
-            inputFile >> a1 >> a2 ;
-            last += a1;
-            last += a2;
-        }
-        temp.lastnum = last;
-        huff_vec.push_back(temp);
+        temp.lastnum = convert_string(get_str,temp.len);
+        huffmaned.push_back(temp);
+        //cout<< "here:" << temp.prenum << "/" << temp.len << "/" << temp.lastnum << endl;
     }
-
-    string get_huff;
-    ofstream outputFile("output_unzipped", ios::out | ios::binary);
-    int bad=0;
-    int two = 0;
-    while (inputFile >> get_huff)
+    inputFile.get();
+    char ch;
+    int cnt=0;
+    int nowch = 0;
+    string ans = "";  
+    while(~(ch=inputFile.get()))
     {
-        cout << "GET: " << get_huff << "/" << get_huff.size() << endl;
-        //char nouse;
-        //inputFile >> nouse;
-        //cout << "nouse: " << nouse << " " << (int)nouse << endl;
-        if (get_huff.size() == 2) two++;
-        for(int i=0 ; i<huff_vec.size() ; i++)
+        for(int i=0; i<8 ; i++)
         {
-            if(huff_vec[i].lastnum == get_huff)
+            if( ((ch>>(7-i))&1) == 1) ans+= '1';
+            else ans += '0';
+            for(int j=0; j<huffmaned.size() ; j++)
             {
-                outputFile << (char)huff_vec[i].prenum;
-                goto OK;
+                if(huffmaned[j].lastnum == ans )
+                {
+                    if(nowch > text_num) goto STOP;
+                    nowch++;
+                    //cout << huffmaned[j].lastnum << "/" << ans << "/" << huffmaned[j].prenum << "/" << (char)huffmaned[j].prenum << endl;
+                    outputFile << (char)huffmaned[j].prenum;
+                    ans = "";
+                    break;
+                }
             }
         }
-        bad++;
-
-        OK:
-            cout << "";
     }
-    cout << endl;
-    cout << two << endl;
-    cout << bad << endl;
-
-    inputFile.close();
+    STOP:
     outputFile.close();
+    inputFile.close();
 }
 
 int main(int argc, char *argv[])
@@ -289,8 +318,8 @@ int main(int argc, char *argv[])
     }
     else
     {
-        char a[] = "output.txt";
-        huff_encode(argv[0]);
+        char a[]= "output.txt";
+        huff_encode(argv[1]);
         huff_decode(a);
     }
     
