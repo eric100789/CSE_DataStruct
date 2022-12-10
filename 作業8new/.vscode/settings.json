@@ -48,6 +48,11 @@
         "chrono": "cpp",
         "variant": "cpp",
         "stack": "cpp",
-        "map": "cpp"
+        "map": "cpp",
+        "iomanip": "cpp",
+        "string": "cpp",
+        "xlocmon": "cpp",
+        "xloctime": "cpp",
+        "xtree": "cpp"
     }
 }

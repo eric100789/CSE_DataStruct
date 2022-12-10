@@ -8,13 +8,19 @@
 #include <cmath>
 using namespace std;
 
-struct Encoder
+/*
+Author: B103040001 孫世諭
+Date: December. 11,2022
+Purpose: 以Huffman演算法製作一個檔案壓縮與解壓縮之軟體，而且我有GUI
+*/
+
+struct Encoder // 建立一個 Encoder Struct 紀錄編碼前編碼後
 {
-    int prenum;
-    string lastnum;
+    int prenum; // 讀到的字元的ASCII
+    string lastnum; // 讀完後變成binary 以 string 的形式儲存
 };
 
-class Node
+class Node // Tree 的部分
 {
     private:
     int num;
@@ -24,7 +30,7 @@ class Node
     string str;
 
     public:
-    friend class Tree;
+    friend class Tree; // 我好像沒有class Tree???
     Node()
     {
         this->num = 0;
@@ -92,7 +98,6 @@ class Node
     {
         if(this->left == nullptr && this->right == nullptr)
         {
-            //cout << "My:" << this->val << "/" << (char)this->val << "/num" << this->num << endl;
             return;
         }
         if(this->left) this->left->debug();
@@ -100,7 +105,7 @@ class Node
     }
 };
 
-string convert_string(string tar, int len)
+string convert_string(string tar, int len) // 輸入一個被編碼過後的binary char string，接下來len是判斷要看幾個binary
 {
     string ans = "";
     for (int i=0 ; i<=(len-1)/8 ; i++)
@@ -118,7 +123,7 @@ string convert_string(string tar, int len)
     return ans;
 }
 
-bool compare(const void* a, const void* b)
+bool compare(const void* a, const void* b) // 用來sort的東西
 {
     const int x = ((Node*)a)->getNum();
     const int y = ((Node*)b)->getNum();
@@ -140,73 +145,60 @@ bool compare(const void* a, const void* b)
     return false;
 }
 
-int string_to_dec(string tstr)
+void huff_encode(char * file_path, char * output_path) // encode 主軸
 {
-    int now=0;
-    int tstrsize = tstr.size();
-    for(int i=tstrsize ; i>=0 ; i--)
-    {
-        if(tstr[i] == '1') now+= pow(2,tstrsize-i);
-    }
-    return now;
-}
+    ifstream inputFile(file_path, ios::in | ios::binary); // 打開我要編的東西
 
-void huff_encode(char * file_path, char * output_path)
-{
-    ifstream inputFile(file_path, ios::in | ios::binary);
-
-    if(!inputFile) {
+    if(!inputFile) { // 如果被騙了
         cout << "error" <<endl;
         return;
     }
 
-    char c;
-    int i_arr[256] = {0};
-    vector<char> text;
-    vector<Node *> vec_node;
+    char c; // 開始一個一個看
+    int i_arr[256] = {0}; // 用256陣列當作SET
+    vector<char> text; // 每一個text
+    vector<Node *> vec_node; // 存Node的東西 做賀夫曼術用
     
-    while(inputFile.get(c))
+    while(inputFile.get(c)) // 一直看阿
     {
-        i_arr[((int)c)+128] += 1;
-        text.push_back(c);
+        i_arr[((int)c)+128] += 1; // 紀錄數量
+        text.push_back(c); // 紀錄咚咚
     }
     for(int i=0; i<256; i++)
     {
         if(i_arr[i] > 0)
         {
-            //cout << "Hey:" << (char)(i-128) << " has " << i_arr[i] << endl;
-            vec_node.push_back(new Node(i-128,i_arr[i]));
+            vec_node.push_back(new Node(i-128,i_arr[i])); // 建立TREE
         }
     }
-    sort(vec_node.begin(),vec_node.end(), compare );
+    sort(vec_node.begin(),vec_node.end(), compare ); 
 
-    while(vec_node.size() != 1)
+    while(vec_node.size() != 1) // 瘋狂合併
     {
         Node * temp1 = vec_node.back(); vec_node.pop_back();
         Node * temp2 = vec_node.back(); vec_node.pop_back();
         vec_node.push_back( new Node(temp1,temp2) );
-        sort(vec_node.begin(),vec_node.end(), compare );
-        //delete temp1,temp2;
+        sort(vec_node.begin(),vec_node.end(), compare ); // 每合併一次就要整理一次
     }
-    vec_node[0]->debug();
-    vector<Encoder> huffmaned;
-    vec_node[0]->makeEncoder(huffmaned);
+    vec_node[0]->debug(); // debug
+    vector<Encoder> huffmaned; // good
+    vec_node[0]->makeEncoder(huffmaned); // easy?
 
 
 
     for(int i=0 ; i<huffmaned.size() ; i++)
     {
-        cout << huffmaned[i].prenum << endl << huffmaned[i].lastnum << endl;
+        cout << huffmaned[i].prenum << endl << huffmaned[i].lastnum << endl; // debug
     }
 
-    ofstream outputFile(output_path, ios::out | ios::binary);
+    ofstream outputFile(output_path, ios::out | ios::binary); // 打開檔案開存
 
-    outputFile << huffmaned.size() << ' ' << text.size() << '\n';
+    outputFile << huffmaned.size() << ' ' << text.size() << '\n'; // HEADERS
     for(int i=0 ; i<huffmaned.size() ; i++)
     {
-        outputFile << huffmaned[i].prenum << ' ' << huffmaned[i].lastnum.size() << ' ';
+        outputFile << huffmaned[i].prenum << ' ' << huffmaned[i].lastnum.size() << ' '; // HEADERS
 
-        char tmp = 0, cnt = 0;
+        char tmp = 0, cnt = 0; // 處理該死的二進位 把string 變成 char 存成 header
         for(int j=0 ; j<huffmaned[i].lastnum.size() ; j++)
         {
             tmp <<= 1;
@@ -223,10 +215,15 @@ void huff_encode(char * file_path, char * output_path)
             tmp <<= (8 - cnt);
             outputFile << tmp;
         }
-        outputFile << '\n';
-    }
+        outputFile << '\n'; // 一個HEADER換一行
+    }// 終於結束HEADER
 
-    char tmp = 0, cnt = 0;
+    char tmp = 0, cnt = 0; // 這邊是無情的壓縮檔案 
+    /* 
+        作法是把所有char都擠在一起
+        Header的存法 EX: 193 6 11000000 但看的時候只看前6個 110000
+        壓縮檔案存法 EX: 11000011 00001111 那就是兩個193加一個1111對應的東東
+    */
     for(int i=0 ; i<text.size() ; i++)
     {
         int index;
@@ -262,14 +259,14 @@ void huff_encode(char * file_path, char * output_path)
     inputFile.close();
 }
 
-void huff_decode(char * file_path, char * output_file)
+void huff_decode(char * file_path, char * output_file) // 瘋狂DECODE
 {
     ifstream inputFile(file_path, ios::in | ios::binary);
     ofstream outputFile(output_file, ios::out | ios::binary);
     int decode_num,text_num; inputFile >> decode_num >> text_num;
-    map<string, int> huffmanMap;
+    map<string, int> huffmanMap; // 這邊用map存編碼表
 
-    for(int i=0 ; i<decode_num ; i++)
+    for(int i=0 ; i<decode_num ; i++) // 存起來
     {
         int prenum, len; string get_str="",lastnum;
         char ch;
@@ -293,16 +290,16 @@ void huff_decode(char * file_path, char * output_file)
     while(!inputFile.eof())
     {
         ch=inputFile.get();
-        for(int i=0; i<8 ; i++)
+        for(int i=0; i<8 ; i++) 
         {
             if( ((ch>>(7-i))&1) == 1) ans+= '1';
-            else ans += '0';
-
-            if(huffmanMap.find(ans) != huffmanMap.end())
+            else ans += '0'; 
+            // 每讀一次我就測試一遍，用for會慢到哭，所以這邊我用map增加搜尋速度
+            if(huffmanMap.find(ans) != huffmanMap.end()) // 如果STRING在這個MAP有對應的東西的話我就直接寫入檔案
             {
-                if(nowch >= text_num) goto STOP;
+                if(nowch >= text_num) goto STOP; // 其實程式應該結束了 所以我就跳到STOP
                 nowch++;
-                outputFile << (char)huffmanMap[ans];
+                outputFile << (char)huffmanMap[ans]; 
                 ans = "";
             }
         }
@@ -316,15 +313,15 @@ int main(int argc, char *argv[])
 {
     if(argc == 5)
     {
-        huff_encode(argv[2],argv[3]);
+        huff_encode(argv[2],argv[3]); // 串接Python GUI用的
     }
     else if(argc == 6)
     {
-        huff_decode(argv[2],argv[3]);
+        huff_decode(argv[2],argv[3]); // 串接Python GUI用的
     }
     else if(argc == 4)
     {
-        huff_encode(argv[1],argv[2]);
+        huff_encode(argv[1],argv[2]); // 單純的用終端機輸入
         huff_decode(argv[2],argv[3]);
     }
     else
